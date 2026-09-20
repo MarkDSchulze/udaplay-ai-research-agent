@@ -1,3 +1,4 @@
-.nv
+.env
 __pycache__/
 *.pyc
+chromadb/
