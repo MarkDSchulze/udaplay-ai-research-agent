@@ -34,7 +34,7 @@ tavily-python>=0.5.4
 
 1. Install the required Python dependencies.
 
-2. Create a `config.env` file in the project directory with the required API keys:
+2. Create a `.env` file in the project directory with the required API keys:
 
 ```text
 OPENAI_API_KEY="YOUR_OPENAI_KEY"
@@ -48,20 +48,20 @@ OPENAI_BASE_URL="https://openai.vocareum.com/v1"
 ```python
 from dotenv import load_dotenv
 
-load_dotenv("config.env")
+load_dotenv()
 ```
 
-4. Run `Udaplay_01_solution_project.ipynb` first to create and populate the ChromaDB vector database.
+4. Run `Udaplay_01_solution_project.ipynb` first to create and populate the persistent ChromaDB vector database.
 
 5. Run `Udaplay_02_solution_project.ipynb` to initialize and test the UdaPlay agent.
 
-> API keys are not included in the repository.
+> API keys are not included in the repository. The `.env` file is excluded through `.gitignore`.
 
 ## Testing
 
-The notebooks contain example queries that demonstrate both local retrieval and web-search fallback behavior.
+The project notebooks contain example queries that demonstrate local retrieval, evaluation, and web-search fallback.
 
-Example queries:
+Example queries include:
 
 ```text
 When were Pokémon Gold and Silver released?
@@ -78,17 +78,22 @@ The example queries demonstrate different agent behaviors:
 ```text
 Pokémon Gold and Silver
 → Relevant information is found in the local vector database.
+→ The retrieval evaluator confirms that the local result is sufficient.
+→ The agent answers using the local game dataset.
 
 Super Mario 64
 → Semantic retrieval identifies the appropriate game record.
+→ The retrieval evaluator confirms that the result is sufficient.
+→ The agent answers using the local game dataset.
 
 Mortal Kombat X / PlayStation 5
-→ Local retrieval is insufficient.
+→ Local retrieval does not provide sufficient information.
 → The retrieval evaluator rejects the local results.
 → The agent falls back to Tavily web search.
+→ The final answer includes a web source URL.
 ```
 
-The intended workflow is:
+The agent workflow is:
 
 ```text
 User Question
@@ -97,13 +102,13 @@ retrieve_game
     ↓
 evaluate_retrieval
     ↓
-Useful? ── Yes → Generate answer from local data
-    │
-    No
-    ↓
-game_web_search
-    ↓
-Generate answer using web results
+Useful?
+ ┌───────┴────────┐
+Yes               No
+ ↓                 ↓
+Local Answer    game_web_search
+                   ↓
+                Web Answer
 ```
 
 ## Project Instructions
@@ -114,10 +119,10 @@ Generate answer using web results
 
 * Loads the provided video game JSON files
 * Formats each game as a searchable document
-* Creates a persistent ChromaDB database
+* Creates a persistent ChromaDB vector database
 * Uses OpenAI embeddings for semantic retrieval
-* Stores game metadata in the vector collection
-* Demonstrates semantic search against the game dataset
+* Stores game metadata in the ChromaDB collection
+* Demonstrates semantic search against the local game dataset
 
 ### Part 2 — Agent Development
 
@@ -127,7 +132,7 @@ The agent includes three primary tools:
 
 #### `retrieve_game`
 
-Performs semantic search against the local ChromaDB game collection.
+Performs semantic search against the local ChromaDB game collection and returns relevant game records with their local source information.
 
 #### `evaluate_retrieval`
 
@@ -137,16 +142,61 @@ Uses an LLM as a judge to determine whether the retrieved documents contain enou
 
 Uses the Tavily API to search the web when the local dataset does not provide sufficient information.
 
-The agent maintains conversation state and uses a state-machine workflow to coordinate LLM calls and tool execution.
+The agent maintains conversation state across queries and uses a state-machine workflow to coordinate LLM calls and tool execution.
+
+The final notebook demonstrates:
+
+* Internal RAG retrieval
+* Retrieval quality evaluation
+* Conditional web-search fallback
+* Tool usage
+* Stateful execution within a shared session
+* Final answers with source information
+
+## Project Structure
+
+```text
+udaplay-ai-research-agent/
+├── README.md
+├── Udaplay_01_solution_project.ipynb
+├── Udaplay_02_solution_project.ipynb
+├── games/
+│   ├── 001.json
+│   ├── 002.json
+│   └── ...
+├── lib/
+│   ├── agents.py
+│   ├── evaluation.py
+│   ├── llm.py
+│   ├── memory.py
+│   ├── messages.py
+│   ├── parsers.py
+│   ├── state_machine.py
+│   ├── tooling.py
+│   └── vector_db.py
+└── .gitignore
+```
 
 ## Built With
 
-* [ChromaDB](https://www.trychroma.com/) — Vector database and semantic retrieval
+* [ChromaDB](https://www.trychroma.com/) — Persistent vector database and semantic retrieval
 * [OpenAI](https://openai.com/) — Language models and embeddings
 * [Tavily](https://tavily.com/) — Web search API
-* [Pydantic](https://docs.pydantic.dev/) — Structured model outputs and validation
+* [Pydantic](https://docs.pydantic.dev/) — Structured output models and validation
 * [python-dotenv](https://pypi.org/project/python-dotenv/) — Environment variable management
 * Python — Agent, retrieval, and workflow implementation
+
+## Security
+
+API credentials are stored locally in `.env` and are excluded from version control.
+
+The repository should not contain:
+
+```text
+.env
+__pycache__/
+*.pyc
+```
 
 ## License
 
